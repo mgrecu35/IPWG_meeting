@@ -20,6 +20,8 @@ cfadZKa=np.zeros((60,50),float)
 pmean=np.zeros((60),float)
 cmean=np.zeros((60),float)
 zmean=np.zeros((60,2),float)
+zkuL=[]
+zkaL=[]
 for fname in sorted(files):
     fh=Dataset(fname,'r')
     if int(fname.split('.')[-3]) not in orbits:
@@ -57,8 +59,17 @@ for fname in sorted(files):
         i1=a[0][b][i]
         j1=a[1][b][i]
         bzd1=bzdn[i1,j1]
-        if zKu[i1,j1,0:bzd1-4].max()<30:
+        if zKu[i1,j1,0:bzd1-4].max()<22:
             continue
+        zm_ku=zKu[i1,j1,bzd1-40:bzd1+20]
+        zm_ka=zKa[i1,j1,bzd1-40:bzd1+20]
+        prate1=precipRaten[i1,j1,bzd1-40:bzd1+20]
+        ar=np.nonzero(prate1<1e-3)
+        zm_ku[ar]=0
+        zm_ku[zm_ku<0]=0
+        zm_ka[ar]=0
+        zm_ka[zm_ka<0]=0
+        #print(zm_ku[ar])
         for k in range(bzd1-40,bzd1+20):
             if k<bcfn[i1,j1]:
                 i0=int(precip1d[k]/2)
@@ -72,12 +83,14 @@ for fname in sorted(files):
                 if i0>=0 and i0<50 and precip1d[k]>12:
                     cfad[k-bzd1+40,i0]+=1
                 i0=int(zKu[i1,j1,k])
-                if i0>=0 and i0<50 and precip1d[k]>12:
+                if i0>=0 and i0<50 and precip1d[k]>12 and precipRate[i1,j1,k]>0:
                     cfadZKu[k-bzd1+40,i0]+=1
                 i0=int(zKa[i1,j1,k])
-                if i0>=0 and i0<50 and precip1d[k]>12:
+                if i0>=0 and i0<50 and precip1d[k]>12 and precipRate[i1,j1,k]>0:
                     cfadZKa[k-bzd1+40,i0]+=1
-        nprofs+=len(b[0])
+        nprofs+=1
+        zkuL.append(zm_ku)
+        zkaL.append(zm_ka)
     print(sfcRain.sum())
     continue
     plt.figure(figsize=(8,12))
@@ -86,21 +99,34 @@ for fname in sorted(files):
     sfcRain1d=sfcRain.sum(axis=-1)
     sfcRain1d=gaussian_filter(sfcRain1d,sigma=2)
     ind=np.argmax(sfcRain1d)
-    i1=max(0,ind-50)
-    i2=min(nx,ind+50)
+    i1=max(0,ind-40)
+    i2=min(nx,ind+40)
     plt.pcolormesh(lon,lat,sfcRain,norm=matplotlib.colors.LogNorm(),cmap='jet')
+
+    #plt.subplot(311)
+    precipRatem=np.ma.array(precipRate, mask=precipRate<0.01)
+    plt.pcolormesh(range(nx),np.arange(176)*0.125,
+                   precipRatem[:,24,::-1].T,cmap='jet',norm=matplotlib.colors.LogNorm())
+    plt.xlim(i1,i2)
+    plt.ylim(0,12)
+    plt.colorbar()
     zKum=np.ma.array(zKu,mask=zKu<0)
     zKam=np.ma.array(zKa,mask=zKa<0)
-    plt.title(fname[-17:-10])
+    plt.title('Orbit %i'%(int(fname[-16:-10])))
     plt.subplot(312)
-    plt.pcolormesh(zKum[:,24,::-1].T,cmap='jet',vmax=50)
+    plt.pcolormesh(range(nx),np.arange(176)*0.125,zKum[:,24,::-1].T,cmap='jet',vmax=50)
     plt.xlim(i1,i2)
-    plt.ylim(0,100)
+    plt.ylim(0,12)
+    plt.colorbar()
     plt.subplot(313)
-    plt.pcolormesh(zKam[:,24,::-1].T,cmap='jet',vmax=50)
+    plt.pcolormesh(range(nx),np.arange(176)*0.125,zKam[:,24,::-1].T,cmap='jet',vmax=50)
     plt.xlim(i1,i2)
-    plt.ylim(0,100)
+    plt.ylim(0,12)
+    plt.colorbar()
     plt.show()
+
+import pickle
+pickle.dump({"zku":np.array(zkuL),"zka":np.array(zkaL)},open("zprofs.pklz","wb"))
 
 matplotlib.rcParams['font.size']=12
 rbin=np.arange(50)/15
@@ -119,7 +145,7 @@ plt.plot(pmean/cmean,(40-np.arange(60))*0.125)
 plt.ylabel('Relative height(km)')
 plt.xlabel('mm/h')
 plt.title('Mean precip. profile')
-plt.savefig('convPrecip.png')
+plt.savefig('convPrecip_2.png')
 
 plt.figure(figsize=(12,8))
 plt.subplot(121)
@@ -139,7 +165,7 @@ plt.xlabel('dBZ')
 plt.ylabel('Relative Height (km)')
 cbar=plt.colorbar()
 cbar.ax.set_title('Count')
-plt.savefig('convZCfads.png')
+plt.savefig('convZCfads_2.png')
 stop
 zKum=np.ma.array(zKu,mask=zKu<0)
 
