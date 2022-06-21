@@ -22,9 +22,17 @@ nrefl=2
 ice_type=1
 undef=0.0
 pmol,pnorm,pnorm_perp_tot,\
-    tautot,refl = lidar.lidar_simulator(npart,nrefl,undef,\
-                                  pres,presf,temp,
-                                  q_lsliq,q_lsice,q_cvliq,\
-                                  q_cvice,ls_radliq,\
-                                  ls_radice,cv_radliq,cv_radice,\
-                                  ice_type)
+    tautot,betatot_liq,\
+    betatot_ice,\
+    betatot,refl, zheight = lidar.lidar_simulator(npart,nrefl,undef,\
+                                         pres,presf,temp,
+                                         q_lsliq,q_lsice,q_cvliq,\
+                                         q_cvice,ls_radliq,\
+                                         ls_radice,cv_radliq,cv_radice,\
+                                         ice_type)
+bscatt=betatot_ice[20,:]
+salb=0.8+bscatt*0
+g=0.4+bscatt*0
+alt=700000
+alt=4000
+#bscatt_ms=lidar.multiscatter_lidarf(extinct,salb,g,bscatt,dr,noms,alt,alt0,freq)

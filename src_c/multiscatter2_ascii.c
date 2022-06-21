@@ -536,3 +536,289 @@ int multiscatter_(int *nrange, float *extFort,
   free(pristine_ice_fraction);
   free(g);
 }
+
+
+
+int multiscatter_lidar_(int *nrange, float *extFort, 
+                        float *ext2bscatt, float *salbFort, float *gFort,
+                        float *bscatFort, float *lambd, int *noMS, float *angle, float *dr,
+                        float *alt, float *alt0)
+{
+  /* VARIABLE DECLARATIONS */
+
+  FILE *infile;// = fopen("msRProf2.in","r");
+  int n, m = 0, i, iarg;
+  int nrepeats = 1;
+  int output_jacobian = 0;
+  int output_adjoint = 0;
+  int calc_jacobian = 0;
+  int separate_bscat_air = 0;
+  int use_isotropic_pp = 0;
+  int use_air_ext = 1;
+  int automatically_configure = 0;
+  int automatically_configure_tdts = 0;
+  int manually_select_algorithms = 0;
+  int manually_select_cbh = 0;
+  int print_stats = 0;
+  int use_version_1x = 0;
+  int ninputs;
+  int norder = 4;
+  char buffer[MAX_CHARS];
+  int ch, status;
+  char* strbuf = NULL;
+  char* curbuf = NULL;
+  char* newcurbuf = NULL;
+  size_t strbufoffset = 0;
+  size_t strbuflen = 0;
+  ms_real rho_receiver_old = 1.0;
+
+  ms_real* range = NULL;
+  ms_real* radius = NULL;
+  ms_real* ext = NULL;
+  ms_real* ext_bscat_ratio = NULL;
+  ms_real* ext_air = NULL;
+  ms_real* droplet_fraction = NULL;
+  ms_real* pristine_ice_fraction = NULL;
+  ms_real* ssa = NULL;
+  ms_real* g = NULL;
+  ms_real* ssa_air = NULL;
+
+  ms_real* bscat = NULL;
+  ms_real* bscat_air = NULL;
+
+  ms_real* ext_AD = NULL;
+  ms_real* ssa_AD = NULL;
+  ms_real* g_AD = NULL;
+  ms_real* radius_AD = NULL;
+  ms_real* ext_bscat_ratio_AD = NULL;
+ 
+  ms_real* bscat_AD = NULL;
+  ms_real* bscat_air_AD = NULL;
+
+  ms_config config = MS_DEFAULT_CONFIG;
+  ms_instrument instrument = MS_DEFAULT_INSTRUMENT;
+  ms_surface surface = MS_DEFAULT_SURFACE;
+
+  /* Enable some exceptions. At startup all exceptions are masked. */
+   //   feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW|FE_UNDERFLOW);
+   //FE_DIVBYZERO, FE_INEXACT, FE_INVALID, FE_OVERFLOW, FE_UNDERFLOW 
+   //  feenableexcept(FE_ALL_EXCEPT);
+  //  fesetround(FE_UPWARD);
+  /* HANDLE COMMAND-LINE ARGUMENTS */
+
+  config.small_angle_algorithm = MS_SINGLE_SCATTERING;
+  config.wide_angle_algorithm = MS_WIDE_ANGLE_NONE;
+  automatically_configure_tdts = 1;
+  //config.small_angle_algorithm = MS_SINGLE_SCATTERING;
+  //config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_NO_FORWARD_LOBE;
+  separate_bscat_air = 1;
+
+  /* REPORT WHAT IS BEING DONE */
+
+  if (!(config.options & MS_QUIET)) {
+    //fprintf(stderr, "Multiscatter %s\n", MS_VERSION);
+    if (infile == stdin) {
+      fprintf(stderr, "Reading stdin...\n");
+    }
+    else {
+      //fprintf(stderr, "Reading ...");
+    }
+  }
+
+  /* READ AND CHECK THE INPUT FILE */
+
+  /* Skip commented lines */
+  /*
+    while ((ch = fgetc(infile)) == '#') {
+    while ((ch = fgetc(infile)) != '\n') {
+    if (ch == EOF) {
+    fprintf(stderr, "Error: only comments found in input file\n");
+    exit(MS_INPUT_FILE_ERROR);
+    }
+    }
+    }*/
+  // ungetc(ch, infile);
+
+  /* Read input data */
+  /* First line can be any length, in principle: read it into strbuf */
+
+  
+  instrument.nfov=1;
+  n=80;
+  n=*nrange;
+  //printf("%i \n",*nrange);
+  instrument.rho_receiver=malloc(sizeof(ms_real)*(instrument.nfov));
+  instrument.wavelength=0.532e-6;
+  instrument.altitude=*alt;
+  //printf("%g \n",instrument.rho_receiver[0]);
+  instrument.rho_transmitter=0.00005;
+  instrument.rho_receiver[0]=0.000065;
+
+  /* Allocate memory */
+  range = malloc(sizeof(ms_real)*n);
+  radius = malloc(sizeof(ms_real)*n);
+  ext = malloc(sizeof(ms_real)*n);
+  ext_bscat_ratio = malloc(sizeof(ms_real)*n);
+  ext_air = malloc(sizeof(ms_real)*n);
+  ssa = malloc(sizeof(ms_real)*n);
+  ssa_air = malloc(sizeof(ms_real)*n);
+  droplet_fraction = malloc(sizeof(ms_real)*n);
+  pristine_ice_fraction = malloc(sizeof(ms_real)*n);
+  g = malloc(sizeof(ms_real)*n);
+
+  if (!range || !radius || !ext || !ext_bscat_ratio || !ext_air 
+      || !ssa || !ssa_air || !droplet_fraction || !pristine_ice_fraction || !g) {
+    fprintf(stderr, "Error allocating space for input variables\n");
+    exit(MS_MEMORY_ALLOCATION_ERROR);
+  }
+
+
+  /* Read in the n data levels */
+  for (i = 0; i < n; i++) {
+    /* float *ext2bscatt, float *salbFort, float *gFort,
+       float *bscatFort*/
+    radius[i]=0.001;
+    range[i]=(n-1-i)*(*dr)+(*dr/2)+*alt0;
+    ext[i]=extFort[i];
+    ext_bscat_ratio[i]=ext2bscatt[i];
+    ssa[i]=salbFort[i];
+    g[i]=gFort[i];
+    ssa_air[i]=0;
+    ext_air[i]=0;
+    droplet_fraction[i]=0;
+    pristine_ice_fraction[i]=0;
+      /*int nchars = 0;
+	fgets(buffer, MAX_CHARS, infile);
+	ninputs = sscanf(buffer, READ_FORMAT, range+i, ext+i,
+	radius+i, ext_bscat_ratio+i, ext_air+i,
+	ssa+i, g+i, ssa_air+i,
+	droplet_fraction+i, pristine_ice_fraction+i,
+	&nchars);
+	//printf("%g \n",range[i]);
+    */
+  }
+  for (i = 0; i < -n; i++)
+    printf("%g \n",range[i]);
+
+  if (automatically_configure) {
+    if (instrument.wavelength > MS_RADAR_LIDAR_TRANSITION_WAVELENGTH) {
+      /* Assume we have a radar */
+      if (!manually_select_algorithms) {
+	config.small_angle_algorithm = MS_SINGLE_SCATTERING;
+      }
+      if ((!manually_select_algorithms) || automatically_configure_tdts) {
+	config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_NO_FORWARD_LOBE;
+      }
+      if (!manually_select_cbh) {
+	config.coherent_backscatter_enhancement = 2.0;
+      }
+      instrument.receiver_type = MS_GAUSSIAN;
+    }
+    else {
+      /* Assume we have a lidar */
+    }
+  }
+  else if (automatically_configure_tdts) {
+    if (instrument.wavelength > MS_RADAR_LIDAR_TRANSITION_WAVELENGTH) {
+      config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_NO_FORWARD_LOBE;
+    }
+  }
+  
+  if(*noMS==1)
+    config.wide_angle_algorithm = MS_WIDE_ANGLE_NONE;
+  /* Allocate space for output */
+  m=n;
+  bscat = malloc(sizeof(ms_real)*instrument.nfov*m);
+  if (separate_bscat_air) {
+    bscat_air = malloc(sizeof(ms_real)*instrument.nfov*m);
+  }
+  if (!bscat || ((!bscat_air) && separate_bscat_air) ) {
+    fprintf(stderr, "Error allocating space for apparent backscatter output\n");
+    exit(MS_MEMORY_ALLOCATION_ERROR);
+  }
+
+
+  /* REPORT WHAT CALCULATIONS ARE BEING PERFORMED */
+  FILE *fout;
+  /*  fout=fopen("junk2","w");
+  ms_print_algorithms(config, instrument, range, use_isotropic_pp,
+		      separate_bscat_air, output_adjoint, output_jacobian,
+		      calc_jacobian, fout);
+  
+		      fclose(fout);*/
+  /**/
+  if (m < n) {
+    //    fprintf(stderr, "Warning: currently the number of samples (%d) cannot be fewer than\n"
+    //	    "   the number of data points; setting them to be equal\n");*/
+    n = m;
+  }
+
+  if (instrument.receiver_type == MS_GAUSSIAN
+      && (config.small_angle_algorithm == MS_SMALL_ANGLE_PVC_ORIGINAL
+	  || config.small_angle_algorithm == MS_SMALL_ANGLE_PVC_EXPLICIT)) {
+    fprintf(stderr, "Warning: PVC algorithm will use a top-hat receiver pattern\n");
+  }
+  if (instrument.wavelength > MS_RADAR_LIDAR_TRANSITION_WAVELENGTH 
+      && config.small_angle_algorithm > MS_SINGLE_SCATTERING) {
+    fprintf(stderr, "Warning: wavelength greater than %g microns yet using small-angle scattering;\n"
+	    "  should the \"-auto\" option be specified?\n",
+	    MS_RADAR_LIDAR_TRANSITION_WAVELENGTH*1.0e6);
+  }
+  if (instrument.wavelength > MS_RADAR_LIDAR_TRANSITION_WAVELENGTH 
+      && config.wide_angle_algorithm == MS_WIDE_ANGLE_TDTS_FORWARD_LOBE) {
+    fprintf(stderr, "Warning: wavelength greater than %g microns yet using wide-angle scattering\n"
+	    "  assuming a forward lobe; should the \"-auto\" option be specified?\n",
+	    	    MS_RADAR_LIDAR_TRANSITION_WAVELENGTH*1.0e6);
+  }
+  //  printf("%g \n",MS_RANGE_SPACING_TOLERANCE);
+ 
+
+  /* CHECK RANGE-GATE SPACING */
+  if ((!ms_range_spacing_is_regular(n, range, 
+				   MS_RANGE_SPACING_TOLERANCE))
+      && config.wide_angle_algorithm != MS_WIDE_ANGLE_NONE) {
+    fprintf(stderr, 
+	    "  The range-gate spacing is not constant to within a tolerance of 5%%,\n"
+	    "  so will be interpolated on to a regular grid for the purposes of wide-angle scattering\n");
+  }
+
+  /* RUN ALGORITHM */
+//  if (config.options & MS_CRUDE_INTEGRATION) {
+//    ext_air = ssa_air = NULL;
+//  }
+  CHECK(multiscatter(n, m, &config, instrument, surface, range, radius,
+			   ext, ssa, g, ext_bscat_ratio, ext_air, ssa_air,
+			   droplet_fraction, pristine_ice_fraction,
+			   bscat, bscat_air));
+  config.options |= MS_QUIET;	  
+  
+
+   
+  for (i = 0; i < n; i++)
+    bscatFort[i]=bscat[i];
+  for (i = 0; i < -n; i++) {
+    int ifov;
+    /* Print the basic variables */
+    fprintf(stdout, "%d %g %g %g %14.9g\n",
+	    i+1, 
+	    range[i],
+	    ext[i],
+	    radius[i],
+	    bscat[i]);
+
+  }
+
+  if (separate_bscat_air) 
+    free(bscat_air);
+ 
+  free(range);
+  free(radius);
+  free(ext);
+  free(ext_bscat_ratio);
+  free(ext_air);
+  free(ssa);
+  free(ssa_air);
+  free(droplet_fraction);
+  free(pristine_ice_fraction);
+  free(g);
+}

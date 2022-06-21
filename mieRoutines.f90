@@ -78,7 +78,7 @@ subroutine dsdIntegral(nw,f_mu,dm,mu,wl,refr_ind,rho,&
   end do
   Z=log10(Z)*10
   g=g/kscat
-  irain=1
+  !irain=1
 end subroutine dsdIntegral
 
 subroutine dsdIntegrate(rho,wl,&
@@ -177,7 +177,7 @@ subroutine dsdIntegral_graup(nw,f_mu,dm,mu,wl,refr_ind_s,rho,rhos,&
   end do
   Z=log10(Z)*10
   g=g/kscat
-  igraup=1
+  igraup=0
 end subroutine dsdIntegral_graup
 
 
