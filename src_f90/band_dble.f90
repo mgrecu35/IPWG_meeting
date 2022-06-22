@@ -10,7 +10,7 @@ Subroutine band(mode,n,ww,bb,code)
   integer maxlyr, ld, n, mode
   INTEGER code,ud,signd,perm(0:n-1)
   REAL*8 pmat(0:n-1,0:n-1),b(0:n-1)
-  PARAMETER    ( MAXLYR = 90 )
+  PARAMETER    ( MAXLYR = 190 )
   real *8 BB(2*MAXLYR), WW(2*MAXLYR,2*MAXLYR) !WSO 04/07/2013
   integer:: i, k
   INTEGER rc

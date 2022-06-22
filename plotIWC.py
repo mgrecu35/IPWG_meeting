@@ -1,4 +1,5 @@
 from netCDF4 import Dataset
+import combAlg as cAlg
 fh=Dataset("scatteringTablesGPM_SPH.nc")
 ng=272
 zKuG=fh["zKuG"][0:272]
@@ -30,6 +31,48 @@ fh=Dataset("../cloudgen/build/iwc19990827.nc")
 import matplotlib.pyplot as plt
 
 iwc=fh['iwc'][:]
+z=fh['z'][:]
+
+fhs=Dataset("/home/grecu/pyCM1v2/run/squall/cm1out.nc")
+zh=fhs['zh'][:]
+th=fhs['th'][-1,:,0,:]
+prs=fhs['prs'][-1,:,0,:]
+qv =fhs['qv'][-1,:,0,:]
+tk=th*(prs/1e5)**(0.287)
+tk1=tk[:,100]
+prs1=prs[:,100]
+rho=prs1/287/tk1
+
+dz=z[1]-z[0]
+nz=int(z[-1]/dz)
+import numpy as np
+lyrhgt=z[-1]-(nz-1)*dz-dz/2+np.arange(nz+1)*dz
+z1dm=z[-1]-(nz-1)*dz+np.arange(nz)*dz
+lyrtemp=np.interp(lyrhgt/1e3,zh,tk1)
+qv1d=np.interp(z1dm/1e3,zh,qv.mean(axis=-1))
+rho1d=np.interp(z1dm/1e3,zh,rho)
+pres1d=np.interp(z1dm/1e3,zh,prs1)
+t1d=np.interp(z1dm/1e3,zh,tk1)
+ireturn=0
+freq=325+5
+kexttot_atm=[]
+
+for i in range(nz):
+    absair,abswv = cAlg.gasabsr98(freq,t1d[i],rho1d[i]*qv1d[i],pres1d[i],ireturn)
+    kexttot_atm.append(absair+abswv)
+
+kexttot_atm=np.array(kexttot_atm)
+umu=np.cos(53/180*np.pi)
+btemp=293
+fisot=2.7
+emis=0.9
+ebar=0.9
+lambert=0
+salb=np.zeros((nz),float)
+asym=np.zeros((nz),float)
+tb = cAlg.radtran(umu,btemp,lyrtemp,lyrhgt/1e3,kexttot_atm,salb,asym,fisot,emis,ebar,lambert)
+stop
+
 import numpy as np
 dmCoeffs=np.polyfit(zKuG,np.log(dmG),1)
 a=np.nonzero(iwc>0.001)
@@ -63,7 +106,7 @@ for k,j,i in zip(a[0],a[1],a[2]):
 
 zKum=np.ma.array(zKu,mask=zKu<-98)
 
-z=fh['z'][:]
+
 x=fh['x'][:]
 
 
@@ -73,14 +116,6 @@ import lidar
 #REAL pres(npoints,nlev)
 #REAL presf(npoints,nlev)
 
-fhs=Dataset("/home/grecu/pyCM1v2/run/squall/cm1out.nc")
-zh=fhs['zh'][:]
-th=fhs['th'][-1,:,0,:]
-prs=fhs['prs'][-1,:,0,:]
-tk=th*(prs/1e5)**(0.287)
-tk1=tk[:,100]
-prs1=prs[:,100]
-rho=prs1/287/tk1
 dz=(z[1]-z[0])/1e3
 temp=[]
 pres=[]
@@ -147,36 +182,7 @@ d.to_netcdf("lidarInput_2.nc")
 
 npart=4
 nrefl=4
-pmol,pnorm,pnorm_perp_tot,\
-    tautot,betatot_liq,\
-    betatot_ice,\
-    betatot,refl, zheight = lidar.lidar_simulator(npart,nrefl,undef,\
-                                  pres,presf,temp,
-                                  q_lsliq,q_lsice,q_cvliq,\
-                                  q_cvice,ls_radliq,\
-                                  ls_radice,cv_radliq,cv_radice,\
-                                  ice_type)
-import matplotlib
-matplotlib.rcParams['font.size']=12
-plt.figure(figsize=(8,8))
-plt.subplot(211)
-c=plt.pcolormesh(x/1e3,z/1e3,zKum[:,128,:],cmap='jet')
-plt.contour(x/1e3,z/1e3,zKum[:,128,:],levels=[10,12],colors='black')
-c.axes.xaxis.set_visible(False)
-plt.ylabel("Height [km]")
-plt.title('Ku-band')
-cbar1=plt.colorbar(c)
-cbar1.ax.set_title('dbZ')
-plt.subplot(212)
-pnorm_perp_totm=np.ma.array(pnorm,mask=pnorm<1e-6)
-c2=plt.pcolormesh(x/1e3,z/1e3,pnorm_perp_totm.T,\
-                  norm=matplotlib.colors.LogNorm(),cmap='jet')
-cbar=plt.colorbar(c2)
-cbar.ax.set_title('m$^{-1}$sr$^{-1}$')
-plt.title('Lidar')
-plt.xlabel("Distance [km]")
-plt.ylabel("Height [km]")
-plt.savefig('radarAndLidar.png')
+
 
 plt.figure()
 c=plt.pcolormesh(x/1e3,z/1e3,tautot,cmap='jet')

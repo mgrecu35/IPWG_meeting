@@ -33,12 +33,14 @@ def readScatProfR(fname):
     return temp,mass,bscat,Deq,ext,scat,g,vfall,fh
 
 scatTables={}
-for freq in ['13.8','35','183.31','325.15']:
+for freq in ['13.8','35','94','183.31','325.15']:
+    print(freq)
     fnameIce='iceSSRG/ice-self-similar-aggregates_%s-GHz_scat.nc'%freq
     temp,mass,fraction,bscat,Deq,ext,scat,g,vfall,fh=readScatProf(fnameIce)
     scatTables[str(freq)]=[temp,mass,fraction,bscat,Deq,ext,scat,g,vfall]
 fh.close()
 def interp(scatTables,freq,Dint,itemp,ifract):
+    print(freq)
     [temp,mass,fraction,bscat,Deq,ext,scat,g,vfall]=scatTables[freq]
     bscatInt=np.exp(np.interp(Dint,Deq[ifract,:]\
                               ,np.log(bscat[itemp,ifract,:])))

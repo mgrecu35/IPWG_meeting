@@ -15,7 +15,7 @@ def fmu(mu):
 from scattering import *
 nw=0.08
 lwc=1+0.05
-mu=2.0
+mu=3.0
 f_mu=fmu(mu)
 dm=10*dm_lwc(nw,lwc,1000)
 
@@ -73,7 +73,7 @@ except:
     pass
 
 
-fh=Dataset("scatteringTablesGPM_SPH.nc","r+")
+fh=Dataset("scatteringTablesGPM.nc","r+")
 ng=272
 zKuG=fh["zKuG"][0:272]
 attKaT=np.interp(zKuG,zgKuL,attKaL)
@@ -106,6 +106,7 @@ dmR=fh["dmr"][:272]
 rwc=fh["rwc"][:272]
 rainRate=fh["rainRate"][:272]
 
+#stop
 lwc_o,zw,att,rrate,kext,kscat,g,\
     Nd,vfall = bh.dsdintegral(nw,f_mu,dm,mu,wl[ifreq],\
                               refr_ind_w,rhow)
@@ -128,25 +129,73 @@ for i,d in enumerate(D):
 
 itemp=-3
 ifract=10
-bscatIntKu,scatIntKu,extIntKu,gIntKu=interp(scatTables,'35',Dint,itemp,ifract)
-bscatIntKu*=1e6
-scatIntKu*=1e6
-extIntKu*=1e6
+lwcs=np.logspace(-4,1.5,400)
 
-z1,z2=[],[]
-for lwc in lwcs:
-    dm=10*dm_lwc(nw,lwc,1000)
-    lwc_o,zsKu,attKu,grate,kextKu,kscatKu,gKu,\
-        Nd,vfall = bh.dsdintegral_graup(nw,f_mu,dm,mu,wl[ifreq+1],\
-                                    refr_ind_s_Ka,rhow,rhos)
-    lwc_out,z_out,att_out,\
-        rrate_out,kext_out,\
-        kscat_out,g_out,dm_out = bh.dsdintegrate(rhow,wl[ifreq+1],Nd,vfall,\
-                                                 D,dD,\
-                                                 bscatIntKu,extIntKu,scatIntKu,gIntKu)
-    z1.append(zsKu)
-    z2.append(z_out)
-    print(lwc_out,lwc_o)
+freqs=['13.8','35','94','183.31', '325.15']
+
+dmL_s=[]
+lwcL_s=[]
+kextL_s=[]
+kscatL_s=[]
+gL_s=[]
+zL_s=[]
+pRateL_s=[]
+freqsL=[]
+for i,freq in enumerate(freqs):
+    bscatIntKu,scatIntKu,extIntKu,gIntKu=interp(scatTables,freq,Dint,itemp,ifract)
+    bscatIntKu*=1e6
+    scatIntKu*=1e6
+    extIntKu*=1e6
+
+    dmL=[]
+    lwcL=[]
+    kextL=[]
+    kscatL=[]
+    gL=[]
+    zL=[]
+    pRateL=[]
+    freqsL.append(float(freq))
+    for lwc in lwcs:
+        dm=10*dm_lwc(nw,lwc,1000)
+        lwc_o,zsKu,attKu,grate,kextKu,kscatKu,gKu,\
+            Nd,vfall = bh.dsdintegral_graup(nw,f_mu,dm,mu,wl[1],\
+                                            refr_ind_s_Ka,rhow,rhos)
+    
+        lwc_out,z_out,att_out,\
+            rrate_out,kext_out,\
+            kscat_out,g_out,dm_out,r_eff = bh.dsdintegrate(rhow,300/float(freq),Nd,vfall,\
+                                                     D,dD,\
+                                                     bscatIntKu,extIntKu,scatIntKu,gIntKu)
+
+        kextL.append(kext_out)
+        kscatL.append(kscat_out)
+        gL.append(g_out)
+        zL.append(z_out)
+        dmL.append(r_eff)
+        lwcL.append(lwc_out)
+        pRateL.append(rrate_out)
+    kextL_s.append(kextL)
+    kscatL_s.append(kscatL)
+    gL_s.append(gL)
+    zL_s.append(zL)
+    dmL_s.append(dmL)
+    lwcL_s.append(lwcL)
+    pRateL_s.append(pRateL)
+
+import xarray as xr
+
+kextT=xr.DataArray(kextL_s,dims=['nfreq','nbins'])
+kscaT=xr.DataArray(kscatL_s,dims=['nfreq','nbins'])
+gT=xr.DataArray(gL_s,dims=['nfreq','nbins'])
+dmT=xr.DataArray(dmL_s,dims=['nfreq','nbins'])
+iwcT=xr.DataArray(lwcL_s,dims=['nfreq','nbins'])
+ifluxT=xr.DataArray(pRateL_s,dims=['nfreq','nbins'])
+freqT=xr.DataArray(freqsL,dims=['nfreq'])
+zT=xr.DataArray(zL_s,dims=['nfreq','nbins'])
+
+look_up=xr.Dataset({"iwc":iwcT,"iflux":ifluxT,"freq":freqT, "dm":dmT, "kext":kextT,\
+                    "ksca":kscaT,"g":gT,"zT":zT})
+
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.rcParams['font.size']=12
