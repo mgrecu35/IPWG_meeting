@@ -83,7 +83,7 @@ end subroutine dsdIntegral
 
 subroutine dsdIntegrate(rho,wl,&
      lwc,Z,att,rrate,kext,kscat,g,Nd_in,vfall_in,d,dD,&
-     qback_in,qext_in,qsca_in,gsca_in,dm_out)
+     qback_in,qext_in,qsca_in,gsca_in,dm_out, r_eff)
   use scatteringTables
   implicit none
   real :: lambd, vfall(100), zFact, rho, pi
@@ -93,7 +93,8 @@ subroutine dsdIntegrate(rho,wl,&
   integer :: i
   real, intent(in):: Nd_in(100),vfall_in(100), d(100), dD
   real,intent(in):: qback_in(100),qext_in(100),qsca_in(100),gsca_in(100)
-  real, intent(out) :: dm_out
+  real, intent(out) :: dm_out, r_eff
+  real :: mom2
   !real :: qback, qext, qsca, gsca
   pi=atan(1.0)*4
 
@@ -109,11 +110,17 @@ subroutine dsdIntegrate(rho,wl,&
   dm_out=0
   !print*,zFact,'int'
   !print*, qback
+  r_eff=0
+  mom2=0
   do i=1,100
      lwc=lwc+Nd_in(i)/1e6*(0.1*d(i))**3/6&
           *pi*rho*1e3
      dm_out=dm_out+Nd_in(i)/1e6*(0.1*d(i))**3/6&
           *pi*rho*1e3*d(i)
+     r_eff=r_eff+Nd_in(i)/1e6*(0.1*d(i))**2/6&
+          *pi*rho*1e3*d(i)
+     mom2=mom2+Nd_in(i)/1e6*(0.1*d(i))**2/6&
+          *pi*rho*1e3
      !call getsigma_mie_w(refr_ind,wl,d(i),qback(i),qext(i),qsca(i),gsca(i))
      Z=Z+Nd_in(i)*zFact*qback_in(i)
      att=att+4.343*Nd_in(i)*qext_in(i)*1e3/1e6
@@ -125,6 +132,7 @@ subroutine dsdIntegrate(rho,wl,&
   Z=log10(Z)*10
   if(lwc>0) then
      dm_out=dm_out/lwc
+     r_eff=r_eff/mom2
   endif
   g=g/kscat
 end subroutine dsdIntegrate
