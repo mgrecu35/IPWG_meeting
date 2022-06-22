@@ -30,9 +30,31 @@ pmol,pnorm,pnorm_perp_tot,\
                                          q_cvice,ls_radliq,\
                                          ls_radice,cv_radliq,cv_radice,\
                                          ice_type)
-bscatt=betatot_ice[20,:]
-salb=0.8+bscatt*0
-g=0.4+bscatt*0
+ix=73
+bscatt1d=betatot_ice[ix,:]
+salb1d=0.9+bscatt1d*0
+g1d=0.7+bscatt1d*0
 alt=700000
-alt=4000
-#bscatt_ms=lidar.multiscatter_lidarf(extinct,salb,g,bscatt,dr,noms,alt,alt0,freq)
+alt0=4000
+nz=bscatt1d.shape[0]
+extinctL=[]
+for i in range(nz-1,-1,-1):
+    dz=zheight[ix,i+1]-zheight[ix,i]
+    if i==nz-1:
+        extinct=tautot[ix,i]/dz
+    else:
+        extinct=(tautot[ix,i]-tautot[ix,i+1])/dz
+    extinctL.append(extinct)
+
+extinct1d=np.array(extinctL)
+bscatt1d=bscatt1d[::-1]
+freq=532
+dr=dz
+noms=0
+#stop
+bscatt_ms=lidar.multiscatter_lidarf(extinct1d,salb1d,g1d,bscatt1d,dr,noms,alt,alt0,freq)
+import matplotlib
+import matplotlib.pyplot as plt
+
+plt.plot(pnorm[ix,::-1])
+plt.plot(bscatt_ms)

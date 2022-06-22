@@ -268,8 +268,8 @@ int multiscatter_(int *nrange, float *extFort,
   int separate_bscat_air = 0;
   int use_isotropic_pp = 0;
   int use_air_ext = 1;
-  int automatically_configure = 0;
-  int automatically_configure_tdts = 0;
+  int automatically_configure = 1;
+  int automatically_configure_tdts = 1;
   int manually_select_algorithms = 0;
   int manually_select_cbh = 0;
   int print_stats = 0;
@@ -322,6 +322,7 @@ int multiscatter_(int *nrange, float *extFort,
   config.small_angle_algorithm = MS_SINGLE_SCATTERING;
   config.wide_angle_algorithm = MS_WIDE_ANGLE_NONE;
   automatically_configure_tdts = 1;
+  config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_FORWARD_LOBE;
   //config.small_angle_algorithm = MS_SINGLE_SCATTERING;
   //config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_NO_FORWARD_LOBE;
   separate_bscat_air = 1;
@@ -555,8 +556,8 @@ int multiscatter_lidar_(int *nrange, float *extFort,
   int separate_bscat_air = 0;
   int use_isotropic_pp = 0;
   int use_air_ext = 1;
-  int automatically_configure = 0;
-  int automatically_configure_tdts = 0;
+  int automatically_configure = 1;
+  int automatically_configure_tdts = 1;
   int manually_select_algorithms = 0;
   int manually_select_cbh = 0;
   int print_stats = 0;
@@ -608,10 +609,11 @@ int multiscatter_lidar_(int *nrange, float *extFort,
 
   config.small_angle_algorithm = MS_SINGLE_SCATTERING;
   config.wide_angle_algorithm = MS_WIDE_ANGLE_NONE;
+  config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_FORWARD_LOBE;
   automatically_configure_tdts = 1;
   //config.small_angle_algorithm = MS_SINGLE_SCATTERING;
   //config.wide_angle_algorithm = MS_WIDE_ANGLE_TDTS_NO_FORWARD_LOBE;
-  separate_bscat_air = 1;
+  separate_bscat_air = 0;
 
   /* REPORT WHAT IS BEING DONE */
 
@@ -644,9 +646,9 @@ int multiscatter_lidar_(int *nrange, float *extFort,
 
   
   instrument.nfov=1;
-  n=80;
+  //n=80;
   n=*nrange;
-  //printf("%i \n",*nrange);
+  printf("%i \n",*nrange);
   instrument.rho_receiver=malloc(sizeof(ms_real)*(instrument.nfov));
   instrument.wavelength=0.532e-6;
   instrument.altitude=*alt;
@@ -699,7 +701,7 @@ int multiscatter_lidar_(int *nrange, float *extFort,
   }
   for (i = 0; i < -n; i++)
     printf("%g \n",range[i]);
-
+  printf("%g \n",MS_RADAR_LIDAR_TRANSITION_WAVELENGTH);
   if (automatically_configure) {
     if (instrument.wavelength > MS_RADAR_LIDAR_TRANSITION_WAVELENGTH) {
       /* Assume we have a radar */
@@ -715,6 +717,7 @@ int multiscatter_lidar_(int *nrange, float *extFort,
       instrument.receiver_type = MS_GAUSSIAN;
     }
     else {
+      //printf("we have lidar\n");
       /* Assume we have a lidar */
     }
   }

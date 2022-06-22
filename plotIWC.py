@@ -150,13 +150,15 @@ nrefl=4
 pmol,pnorm,pnorm_perp_tot,\
     tautot,betatot_liq,\
     betatot_ice,\
-    betatot,refl = lidar.lidar_simulator(npart,nrefl,undef,\
+    betatot,refl, zheight = lidar.lidar_simulator(npart,nrefl,undef,\
                                   pres,presf,temp,
                                   q_lsliq,q_lsice,q_cvliq,\
                                   q_cvice,ls_radliq,\
                                   ls_radice,cv_radliq,cv_radice,\
                                   ice_type)
 import matplotlib
+matplotlib.rcParams['font.size']=12
+plt.figure(figsize=(8,8))
 plt.subplot(211)
 c=plt.pcolormesh(x/1e3,z/1e3,zKum[:,128,:],cmap='jet')
 plt.contour(x/1e3,z/1e3,zKum[:,128,:],levels=[10,12],colors='black')

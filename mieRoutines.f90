@@ -63,9 +63,9 @@ subroutine dsdIntegral(nw,f_mu,dm,mu,wl,refr_ind,rho,&
   do i=1,100
      lwc=lwc+nw*f_mu*(d(i)/dm)**mu*exp(-lambd*d(i))*(0.1*d(i))**3/6&
           *pi*dD/10*rho*1e3
-     if(irain.eq.0) then
-        call getsigma_mie_w(refr_ind,wl,d(i),qback(i),qext(i),qsca(i),gsca(i))
-     endif
+     !if(irain.eq.0) then
+     call getsigma_mie_w(refr_ind,wl,d(i),qback(i),qext(i),qsca(i),gsca(i))
+     !endif
      Z=Z+nw*f_mu*(d(i)/dm)**mu*exp(-lambd*d(i))*dD/10*zFact*qback(i)*1e6
      att=att+4.343*nw*f_mu*(d(i)/dm)**mu*exp(-lambd*d(i))*dD/10*qext(i)*1e3
      kext=kext+nw*f_mu*(d(i)/dm)**mu*exp(-lambd*d(i))*dD/10*qext(i)*1e3
@@ -107,20 +107,22 @@ subroutine dsdIntegrate(rho,wl,&
   kscat=0
   g=0
   dm_out=0
+  !print*,zFact,'int'
+  !print*, qback
   do i=1,100
      lwc=lwc+Nd_in(i)/1e6*(0.1*d(i))**3/6&
           *pi*rho*1e3
      dm_out=dm_out+Nd_in(i)/1e6*(0.1*d(i))**3/6&
           *pi*rho*1e3*d(i)
      !call getsigma_mie_w(refr_ind,wl,d(i),qback(i),qext(i),qsca(i),gsca(i))
-     Z=Z+Nd_in(i)*zFact*qback(i)*1e6/1e6
-     att=att+4.343*Nd_in(i)*qext(i)*1e3/1e6
-     kext=kext+Nd_in(i)*qext(i)*1e3/1e6
-     kscat=kscat+nw*Nd_in(i)*qsca(i)*1e3/1e6
-     g=g+Nd_in(i)*qsca(i)*gsca(i)*1e3/1e6
+     Z=Z+Nd_in(i)*zFact*qback_in(i)
+     att=att+4.343*Nd_in(i)*qext_in(i)*1e3/1e6
+     kext=kext+Nd_in(i)*qext_in(i)*1e3/1e6
+     kscat=kscat+nw*Nd_in(i)*qsca_in(i)*1e3/1e6
+     g=g+Nd_in(i)*qsca_in(i)*gsca_in(i)*1e3/1e6
      rrate=rrate+Nd_in(i)*(0.1*d(i))**3*pi/6*vfall_in(i)*3.6e6/1e6
   end do
-  Z=log10(Z+1e-9)*10
+  Z=log10(Z)*10
   if(lwc>0) then
      dm_out=dm_out/lwc
   endif
@@ -152,6 +154,7 @@ subroutine dsdIntegral_graup(nw,f_mu,dm,mu,wl,refr_ind_s,rho,rhos,&
   
   Z=0
   zFact=wl**4/pi**5
+  !print*,zFact,'graup'
   att=0
   rrate=0
   kext=0
@@ -175,6 +178,7 @@ subroutine dsdIntegral_graup(nw,f_mu,dm,mu,wl,refr_ind_s,rho,rhos,&
      Nd_out(i)=nw*f_mu*(d(i)/dm)**mu*exp(-lambd*d(i))*dD/10*1e6
      vfall_out(i)=vfall
   end do
+  !print*, qback_g
   Z=log10(Z)*10
   g=g/kscat
   igraup=0

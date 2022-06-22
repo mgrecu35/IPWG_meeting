@@ -12,7 +12,7 @@ from scipy.special import gamma as gam
 def fmu(mu):
     return 6/4**4*(4+mu)**(mu+4)/gam(mu+4)
 
-
+from scattering import *
 nw=0.08
 lwc=1+0.05
 mu=2.0
@@ -46,6 +46,7 @@ lwcs.extend(np.arange(400)*0.1+0.05)
 gRateL,zgKuL,zgKaL=[],[],[]
 attKuL,attKaL=[],[]
 dmgL=[]
+
 for lwc in lwcs:
     dm=10*dm_lwc(nw,lwc,1000)
     lwc_o,zsKu,attKu,grate,kextKu,kscatKu,gKu,\
@@ -60,6 +61,9 @@ for lwc in lwcs:
     attKuL.append(attKu)
     attKaL.append(attKa)
     dmgL.append(dm)
+
+itemp=-2
+ifract=-6
 
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
@@ -94,8 +98,6 @@ fh["gwc"][:272]=gwcT
 fh["zKaG"][:272]=zKaT
 fh["graupRate"][:272]=gRateLT
 
-fh.close()
-stop
 zKuR=fh["zKuR"][0:272]
 zKaR=fh["zKaR"][0:272]
 attKaR=fh["attKaR"][0:272]
@@ -103,7 +105,7 @@ attKuR=fh["attKuR"][0:272]
 dmR=fh["dmr"][:272]
 rwc=fh["rwc"][:272]
 rainRate=fh["rainRate"][:272]
-stop
+
 lwc_o,zw,att,rrate,kext,kscat,g,\
     Nd,vfall = bh.dsdintegral(nw,f_mu,dm,mu,wl[ifreq],\
                               refr_ind_w,rhow)
@@ -118,18 +120,33 @@ gsca_in=np.zeros((100),float)
 
 
 for i,d in enumerate(D):
-    sback,sext,sca,gsca=bh.getsigma_mie_w(refr_ind_s,wl[ifreq],d)
+    sback,sext,sca,gsca=bh.getsigma_mie_w(refr_ind_s_Ka,wl[ifreq+1],d*(rhow/rhos)**(0.333))
     qback_in[i]=sback
     qext_in[i]=sext
     qsca_in[i]=sca
     gsca_in[i]=gsca
-    
-lwc_out,z_out,att_out,\
-    rrate_out,kext_out,\
-    kscat_out,g_out,dm_out = bh.dsdintegrate(rhow,wl[ifreq],Nd,vfall,\
-                                      D,dD,\
-                                      qback_in,qext_in,qsca_in,gsca_in)
 
+itemp=-3
+ifract=10
+bscatIntKu,scatIntKu,extIntKu,gIntKu=interp(scatTables,'35',Dint,itemp,ifract)
+bscatIntKu*=1e6
+scatIntKu*=1e6
+extIntKu*=1e6
+
+z1,z2=[],[]
+for lwc in lwcs:
+    dm=10*dm_lwc(nw,lwc,1000)
+    lwc_o,zsKu,attKu,grate,kextKu,kscatKu,gKu,\
+        Nd,vfall = bh.dsdintegral_graup(nw,f_mu,dm,mu,wl[ifreq+1],\
+                                    refr_ind_s_Ka,rhow,rhos)
+    lwc_out,z_out,att_out,\
+        rrate_out,kext_out,\
+        kscat_out,g_out,dm_out = bh.dsdintegrate(rhow,wl[ifreq+1],Nd,vfall,\
+                                                 D,dD,\
+                                                 bscatIntKu,extIntKu,scatIntKu,gIntKu)
+    z1.append(zsKu)
+    z2.append(z_out)
+    print(lwc_out,lwc_o)
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.rcParams['font.size']=12

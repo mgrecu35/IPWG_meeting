@@ -28,7 +28,8 @@ do k=1,nrange
    endif
 end do
 
-
+print*, salb
+print*, g
 call multiscatter_lidar(nrange, extinct, ext2bscatt, salb, g, &
      bscatt_ms, lambd,noMS,theta,dr,alt,alt0)
 
