@@ -9,11 +9,74 @@ fh=Dataset("lidarInput_3d.nc",'r')
 iwc=fh["ls_radice"][:]
 zku=fh["zKu"][:]
 bscat=fh["pnorm3D"][:]
+rho=fh['rho'][:]
 
+#a=np.nonzero(iwc.sum(axis=0))
 zkum=np.ma.array(zku,mask=zku<-10)
 zku_mean=zkum.mean(axis=-1).mean(axis=-1)
 nz,ny,nx=zku.shape
+dn=fh['dn3d'][:]
 
+a=np.nonzero(iwc.sum(axis=0)>1.5e-2)
+yobsL=[]
+xL=[]
+for j,i in zip(a[0],a[1]):
+     y1=np.log10(bscat[20:54,j,i]+1e-9)+5
+     y1[y1<-1.5]=-1.5
+     y1=list(y1)
+     z1=zku[21:40,j,i]
+     z1[z1<10]=0
+     y1.extend(z1)
+     yobsL.append(y1[::-1])
+     xL.append(np.log10(iwc[21:40,j,i]*1e3*rho[21:40]))
+
+from sklearn.neighbors import KNeighborsRegressor
+neigh = KNeighborsRegressor(n_neighbors=30,weights='distance')
+from sklearn.model_selection import train_test_split
+yobsL=np.array(yobsL)
+xL=np.array(xL)
+X_train, X_test, y_train, y_test = train_test_split(yobsL[:,::1], xL[:,::1], test_size=0.33, random_state=42)
+neigh.fit(X_train, y_train)
+stop
+         
+plt.figure(figsize=(12,6))
+plt.subplot(141)
+for i in range(10):
+    plt.plot(np.log10(bscat[:,i*10,100]),range(64))
+    
+
+plt.xlim(-7,-4)
+plt.ylim(20,55)
+plt.grid()
+
+plt.subplot(142)
+for i in range(10):
+    plt.plot((zku[:,i*10,100]),range(64))
+
+plt.xlim(-20,25)
+plt.ylim(20,55)
+plt.grid()
+
+plt.subplot(143)
+for i in range(10):
+    plt.semilogx(1e3*(iwc[:,i*10,100]),range(64))
+
+plt.xlim(0.1,4)
+plt.ylim(20,55)
+plt.grid()
+
+plt.subplot(144)
+for i in range(10):
+    plt.plot((dn[:,i*10,100]),range(64),'*')
+
+plt.xlim(-1,2)
+plt.ylim(20,55)
+plt.grid()
+
+for i in range(20,54):
+    a=np.nonzero(dn[i,:,:]>-99)
+    print(dn[i,:,:][a].mean(axis=0))
+stop
 zku_mean=[]
 zku_std=[]
 bscatt_mean=[]

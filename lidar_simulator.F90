@@ -30,7 +30,8 @@ SUBROUTINE lidar_simulator(npoints,nlev,npart,nrefl &
      , q_lsliq, q_lsice, q_cvliq, q_cvice &
      , ls_radliq, ls_radice, cv_radliq, cv_radice &
      , ice_type, pmol, pnorm, pnorm_perp_tot,tautot &
-     , betatot_liq, betatot_ice, betatot, refl )
+     , betatot_liq, betatot_ice, betatot, refl, zheight &
+     , beta_mol, tau_mol, alpha_part)
 !
 !---------------------------------------------------------------------------------
 ! Purpose: To compute lidar signal from model-simulated profiles of cloud water
@@ -170,17 +171,18 @@ SUBROUTINE lidar_simulator(npoints,nlev,npart,nrefl &
 
 !   grid-box variables:
       REAL rad_part(npoints,nlev,npart)
-      REAL rhoair(npoints,nlev), zheight(npoints,nlev+1)
-      REAL beta_mol(npoints,nlev), alpha_mol(npoints,nlev)
+      REAL rhoair(npoints,nlev)
+      real, intent(out) :: zheight(npoints,nlev+1)
+      REAL alpha_mol(npoints,nlev)
       REAL kp_part(npoints,nlev,npart)
 
 !   sub-column variables:
       REAL qpart(npoints,nlev,npart) ! mixing ratio particles in each subcolumn
-      REAL alpha_part(npoints,nlev,npart)
+      REAL,intent(out) :: alpha_part(npoints,nlev,npart)
       REAL tau_mol_lay(npoints)  ! temporary variable, moL. opt. thickness of layer k
-      REAL tau_mol(npoints,nlev) ! optical thickness between TOA and bottom of layer k
+      REAL,intent(out) :: tau_mol(npoints,nlev) ! optical thickness between TOA and bottom of layer k
       REAL tau_part(npoints,nlev,npart)
-      REAL,intent(out):: betatot(npoints,nlev)
+      REAL,intent(out):: betatot(npoints,nlev), beta_mol(npoints,nlev)
       REAL tautot_lay(npoints)   ! temporary variable, total opt. thickness of layer k
 !     Optical thickness from TOA to surface for Parasol
      REAL tautot_S_liq(npoints),tautot_S_ice(npoints)     ! for liq and ice clouds
