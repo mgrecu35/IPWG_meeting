@@ -11,9 +11,11 @@ bscat=fh["pnorm3D"][:]
 betatot=fh["betatot3D"][:]
 rho=fh['rho'][:]
 Dm=fh['ls_radice'][:]
+z=fh["z"]
+
 #range(10):
 #for i in [3,0]:
-for i in [3,0]:
+for i in []:#3,0]:
     plt.figure()
     plt.suptitle("%i"%(i*10))
     plt.subplot(121)
@@ -29,7 +31,57 @@ for i in [3,0]:
 #a=np.nonzero(iwc>1e-6)
 a=np.nonzero(iwc.sum(axis=0)>0.75*1e-2)
 dataL=[]
+zcfad=np.zeros((40,64),float)
+bscat_cfad=np.zeros((40,64),float)
+bothL=[]
+lidarL=[]
+radarL=[]
+missedL=[]
 import tqdm
+ice_cfad=np.zeros((4,40,64),float)
+for iv in tqdm.tqdm(range(a[0].shape[0])):
+    j, i=a[0][iv], a[1][iv]#in zip(a[0],a[1]):
+    a1=np.nonzero(iwc[:,j,i]>1e-7)
+    for k in a1[0]:
+        ik=int((np.log10(iwc[k,j,i]*rho[k]*1e3)+2)*20)
+        ik=max(0,ik)
+        ik=min(39,ik)
+        if zku[k,j,i]>12 and bscat[k,j,i]>5e-7:
+            #bothL.append([iwc[k,j,i]*rho[k]*1e3,z[k],k])
+            ice_cfad[0,ik,k]+=1
+        if zku[k,j,i]>12 and bscat[k,j,i]<5e-7:
+            #radarL.append([iwc[k,j,i]*rho[k]*1e3,z[k],k])
+            ice_cfad[1,ik,k]+=1
+        if zku[k,j,i]<12 and bscat[k,j,i]>5e-7:
+            ice_cfad[2,ik,k]+=1
+            #lidarL.append([iwc[k,j,i]*rho[k]*1e3,z[k],k])
+        if zku[k,j,i]<12 and bscat[k,j,i]<5e-7:
+            #missedL.append([iwc[k,j,i]*rho[k]*1e3,z[k],k])
+            ice_cfad[3,ik,k]+=1
+        if zku[k,j,i]>-15:
+            ik=int(zku[k,j,i]+15)
+            if ik<40:
+                zcfad[ik,k]+=1
+        if bscat[k,j,i]>1e-7:
+            ik=int(np.log10(bscat[k,j,i]/1e-7)*10)
+            if ik<40:
+                bscat_cfad[ik,k]+=1
+#stop
+order=[2,0,1,3]
+title=['Radar&Lidar','Radar-only','Lidar-only','Missed']
+import matplotlib
+plt.figure(figsize=(9,9))
+for i in range(4):
+    plt.subplot(2,2,i+1)
+    c=plt.pcolormesh(10**(-2+np.arange(40)/20),z[:]/1e3,ice_cfad[order[i],:,:].T,cmap='jet',\
+                     norm=matplotlib.colors.LogNorm())
+    plt.xscale('log')
+    plt.title(title[order[i]])
+    plt.colorbar(c)
+
+import pickle
+pickle.dump({"iwc_cfad":ice_cfad,"iwc":10**(-2+np.arange(40)/20),"z":z/1e3},open("iwc_cfad.pklz","wb"))
+stop
 for iv in tqdm.tqdm(range(a[0].shape[0])):
     j, i=a[0][iv], a[1][iv]#in zip(a[0],a[1]):
     a1=np.nonzero(bscat[:,j,i]>1e-6)
@@ -55,7 +107,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib
 
 dataL=np.array(dataL)
-neigh = [KNeighborsRegressor(n_neighbors=30,weights='distance') for i in range(3)]
+neigh = [KNeighborsRegressor(n_neighbors=30,weights='distance') for i in range(2)]
 X_train, X_test, \
     y_train, y_test = train_test_split(dataL[:,:4], dataL[:,-1], \
                                        test_size=0.33, random_state=42)
@@ -118,7 +170,7 @@ plt.savefig('lidarOnly.png')
 dataL=np.array(dataL)
 a=np.nonzero(dataL[:,2]>12)
 dataLZ=dataL[a[0],:]
-neigh_Z = [KNeighborsRegressor(n_neighbors=30,weights='distance') for i in range(3)]
+neigh_Z = [KNeighborsRegressor(n_neighbors=30,weights='distance') for i in range(2)]
 Xz_train, Xz_test, \
     yz_train, yz_test = train_test_split(dataLZ[:,:4], dataLZ[:,-1], \
                                        test_size=0.33, random_state=42)
