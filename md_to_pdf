@@ -1,0 +1,6 @@
+pandoc --standalone --from=markdown --to=latex --filter=pandoc-eqnos cmbLidarRadar.md -o cmbLidarRadar.tex
+pandoc --standalone --from=markdown --to=ipynb cmbLidarRadar.md -o cmbLidarRadar.ipynb
+
+pdflatex cmbLidarRadar.tex
+
+
