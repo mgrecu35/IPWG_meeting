@@ -1,0 +1,135 @@
+\documentclass[final,t]{beamer}
+\mode<presentation>
+  {
+    \usetheme{CambridgeUS}
+    \usecolortheme{seahorse}
+  }
+
+\usepackage[orientation=landscape,size=a1,scale=1,debug]{beamerposter}
+\usepackage{lipsum} % for dummy text
+\usepackage{graphicx}
+\setbeamertemplate{caption}[numbered]
+
+\title[]{\huge PSD Parameterization to support ice retrievals from multiple
+instrument observations}
+\author[]{\large Mircea Grecu$^{1}$, Gerald Heymsfield$^{2}$, John Yorks$^{2}$, and Andrew Heymsfield$^3$}
+\institute[]{\Large (1) Morgan State University,  (2) NASA GSFC, and (3) NCAR}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+\maketitle
+\begin{columns}[]
+  \begin{column}{.32\linewidth}
+
+\begin{block}{Motivation}
+\begin{itemize}
+\item
+  Current and future air- and space-borne observing systems feature
+  instruments with different sensitivities and subject to attenuation at
+  different ranges.
+\item
+  From the scientific perspective, physically consistent ice property
+  estimates are desirable irrespective of the instruments used in their
+  derivation.
+\item Such estimates may be derived through the development of consistent "a priori"
+probability distributions.
+\end{itemize}
+\end{block}
+
+\begin{block}{Approach}
+\begin{itemize}
+\item  Use "in-situ" Particle Size Distributions (PSDs) to simulate lidar and radar observations at X-, Ku-,Ka- and W- band.
+\item  Develop kNN methodology to estimate ice properties from combination of observations.
+\item Test methodology using cross-validation.
+\item Evaluate using independent estimates.
+\end{itemize}
+\end{block}
+
+\begin{table}[ht]
+%\caption{A table arranging  images}
+\centering
+\begin{tabular}{cc}
+\includegraphics[scale=0.85]{IMPACTS_Nw.png}&\includegraphics[scale=0.85]{IMPACTS_Nw_dm.png}\\
+
+%\multicolumn {2}{c} 
+\end{tabular}
+\end{table}
+\centerline{The $N_w$ distribution as a function of temperature and the $N_w-D_m$ joint
+distribution}
+
+\centerline{\includegraphics[scale=0.95]{radarAndLidar_slice.png}}
+\centerline{Simulated lidar backscatter and radar reflectivitiy.}
+
+\begin{itemize}
+\item
+In the combined radar lidar region, the lidar backscatter and the integrated backscatter can be used
+as constraints for the kNN methodology.
+\item
+In the region of single frequency radar observations, temperature can be directly used as a parameter,
+over via $N_w$ in "normalized relationships" e.g. $IWC=N_w^{1-b}aZ_w^b$.
+\end{itemize}
+\end{column}
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+  \begin{column}{.32\linewidth}
+
+  \begin{block}{Cross-Validation Results}
+  \begin{itemize}
+   \item
+   For evaluation in the simulation space, the database of observed PSDs and calculated reflectivities is randomly split in two.
+   \item
+   Half of the database is used for training, while the other is used for evaluation.
+   \item
+   Results are shown below.  Errors are likely to be caused by ambiguities in the database, rather than
+   methodology.
+  \end{itemize}
+  \end{block}
+\begin{table}[ht]
+%\caption{A table arranging  images}
+\centering
+\begin{tabular}{cc}
+\includegraphics[scale=1]{dmValidation.png}&\includegraphics[scale=1]{iwcValidation.png}\\
+\end{tabular}
+\end{table}
+
+\begin{block}{Direct Validation Results}
+\begin{itemize}
+\item
+ "In-situ" and retrieved IWCs for two cases from the 2020 campaign are shown below.
+ \end{itemize}
+\end{block}
+  \centerline{\includegraphics[scale=1.25]{jan25_2020.png}}
+  
+  \centerline{\includegraphics[scale=1.25]{feb05_2020_2.png}}
+  
+%\begin{table}[ht]
+%\caption{A table arranging  images}
+%\centering
+%\begin{tabular}{cc}
+%\includegraphics[scale=0.75]{jan25_2020.png}&\includegraphics[scale=0.75]{feb05_2020_2.png}\\
+%\end{tabular}
+%\end{table}
+\end{column}
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \begin{column}{.32\linewidth}
+
+  \begin{block}{Conclusions}
+   And here I am going to conclude.
+  \end{block}
+  
+   \centerline{\includegraphics[scale=1.25]{retrievedProfs.png}}
+  \end{column}
+
+  \end{columns}
+
+\end{frame}
+
+\end{document}
